@@ -15,22 +15,6 @@ struct Record {
     string user;
     int timestamp;
     int karma;
-
-    Record() {}
-
-    Record(string id, string title, string user, int timestamp, int karma) : id(move(id)),
-                                                                             title(move(title)),
-                                                                             user(move(user)),
-                                                                             timestamp(timestamp),
-                                                                             karma(karma) {}
-
-    Record(Record &&other) : id(move(other.id)),
-                             title(move(other.title)),
-                             user(move(other.user)),
-                             timestamp(other.timestamp),
-                             karma(other.karma) {}
-
-    Record(const Record &other) = default;
 };
 
 // Реализуйте этот класс
