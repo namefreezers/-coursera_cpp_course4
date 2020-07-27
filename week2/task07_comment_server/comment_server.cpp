@@ -95,15 +95,16 @@ public:
     friend ostream &operator<<(ostream &output, const HttpResponse &resp) {
         output << resp.code;
 
-        for (HttpResponseHeader h : resp.headers) {
+        for (const HttpResponseHeader &h : resp.headers) {
             output << h;
         }
         if (!resp.content.empty()) {
             output << HttpResponseHeader{"Content-Length", to_string(resp.content.length())};
-            output << "\n";
-
-            output << resp.content;
         }
+
+        output << "\n";
+        output << resp.content;
+
         return output;
     }
 
