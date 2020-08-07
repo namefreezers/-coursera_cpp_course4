@@ -1,7 +1,10 @@
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
+
+#include "test_runner.h"
 
 using namespace std;
 
@@ -9,6 +12,14 @@ enum class Gender {
     FEMALE,
     MALE
 };
+
+ostream& operator<<(ostream& os, const Gender& gender) {
+    if (gender == Gender::MALE) {
+        return os << "MALE";
+    } else {
+        return os << "FEMALE";
+    }
+}
 
 struct Person {
     int age;
@@ -130,7 +141,57 @@ void PrintStats(const AgeStats& stats,
                << stats.unemployed_males   << endl;
 }
 
+void Test1ZeroElementsMedianAge() {
+    vector<Person> empty;
+    ASSERT_EQUAL(ComputeMedianAge(empty.begin(), empty.end()), 0);
+}
+
+void Test2BiasedMiddleMedianAge() {
+    vector<Person> v = {{0, Gender::MALE, true},
+                        {1, Gender::MALE, true},
+                        {2, Gender::MALE, true}};
+    ASSERT_EQUAL(ComputeMedianAge(v.begin(), v.end()), 1);
+}
+
+void Test3MessedGenderEmployedReadPersons_Test4ErrorEmployed() {
+    stringstream ss("1\n30 0 1\n");
+    vector<Person> read_persons = ReadPersons(ss);
+    ASSERT_EQUAL(read_persons[0].gender, Gender::FEMALE);
+    ASSERT_EQUAL(read_persons[0].is_employed, true);
+}
+
+void Test5EmployedMalesComputeStats() {
+    vector<Person> persons;
+    persons.push_back({30, Gender::MALE, true});
+    ASSERT_EQUAL(ComputeStats(persons).employed_males, 30);
+}
+
+void Test6MessedMalesFemales() {
+    AgeStats stats{1, 2, 3, 4, 5, 6, 7};
+    stringstream ss;
+    PrintStats(stats, ss);
+    ASSERT_EQUAL(ss.str(),
+                 "Median age = 1\n"
+                 "Median age for females = 2\n"
+                 "Median age for males = 3\n"
+                 "Median age for employed females = 4\n"
+                 "Median age for unemployed females = 5\n"
+                 "Median age for employed males = 6\n"
+                 "Median age for unemployed males = 7\n"
+    );
+}
+
 int main() {
+    {
+        TestRunner tr;
+        RUN_TEST(tr, Test1ZeroElementsMedianAge);
+        RUN_TEST(tr, Test2BiasedMiddleMedianAge);
+        RUN_TEST(tr, Test3MessedGenderEmployedReadPersons_Test4ErrorEmployed);
+        RUN_TEST(tr, Test5EmployedMalesComputeStats);
+        RUN_TEST(tr, Test6MessedMalesFemales);
+    }
+
     PrintStats(ComputeStats(ReadPersons()));
+
     return 0;
 }
