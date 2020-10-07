@@ -187,13 +187,95 @@ void PrintCheckResults(const vector<bool> &check_results, ostream &out_stream = 
     }
 }
 
+void Test1() {
+    string s = "abc.def";
+    vector<string_view> parts = Split(s, ".");
+    vector<string_view> parts_correct = {string_view(s).substr(0, 3), string_view(s).substr(4, 3)};
+    ASSERT_EQUAL(parts, parts_correct);
+}
+
+void Test2() {
+    Domain d("abc.def");
+    vector<string> parts_reversed = {"def", "abc"};
+    int i = 0;
+    for (const string &s : d.GetReversedParts()) {
+        ASSERT_EQUAL(s, parts_reversed[i]);
+        i++;
+    }
+}
+
+void Test3() {
+    Domain d1("def");
+    Domain d2("def");
+    vector<Domain> domains = {d1};
+    DomainChecker dc(domains.begin(), domains.end());
+    ASSERT(dc.IsSubdomain(d2));
+}
+
+void Test3Alt() {
+    Domain d1("def");
+    Domain d2("def");
+    ASSERT(IsSubdomain(d2, d1));
+}
+
+void Test4() {
+    Domain d1("def");
+    Domain d2("abc.def");
+    ASSERT(IsSubdomain(d2, d1));
+}
+
+void Test5() {
+    Domain d1("def");
+    Domain d2("abc.def");
+    Domain d3("bcd.def");
+
+    vector<Domain> domains = {d1, d2};
+    DomainChecker dc(domains.begin(), domains.end());
+    ASSERT(dc.IsSubdomain(d3));
+}
+
+void Test6() {
+    Domain d1("def");
+    Domain d2("abc.def");
+    Domain d3("bcd.def");
+    Domain d4("ddef");
+
+    vector<Domain> banned_domains = {d1, d2};
+    vector<Domain> domains = {d3, d4};
+    vector<bool> expected = {false, true};
+    ASSERT_EQUAL(CheckDomains(banned_domains, domains), expected);
+}
+
+void Test7() {
+    vector<bool> results = {false, true};
+    stringstream ss;
+    PrintCheckResults(results, ss);
+    ASSERT_EQUAL(ss.str(), "Bad\nGood\n");
+}
+
+void Test8() {
+    stringstream ss("1\nabc\n");
+    ASSERT_EQUAL(ReadDomains(ss), vector<Domain>({Domain("abc")}));
+}
+
+
 void TestSimple() {
-    // Your tests here
+    Test1();
+    Test2();
+    Test3();
+    Test3Alt();
+    Test4();
+    Test5();
+    Test6();
+    Test7();
+    Test8();
 }
 
 int main() {
-    TestRunner tr;
-    RUN_TEST(tr, TestSimple);
+    {
+        TestRunner tr;
+        RUN_TEST(tr, TestSimple);
+    }
 
     const vector<Domain> banned_domains = ReadDomains();
     const vector<Domain> domains_to_check = ReadDomains();

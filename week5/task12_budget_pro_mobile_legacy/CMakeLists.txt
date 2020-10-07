@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.17)
+project(task12_budget_pro_mobile_legacy)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_executable(task12_budget_pro_mobile_legacy task12_budget_pro_mobile_legacy.cpp)
