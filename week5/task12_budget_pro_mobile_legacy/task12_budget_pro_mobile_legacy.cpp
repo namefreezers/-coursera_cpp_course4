@@ -103,7 +103,7 @@ size_t ComputeDayIndex(const Date &date) {
 }
 
 
-array<double, VERTEX_COUNT> tree_values, tree_add, tree_factor;
+array<double, VERTEX_COUNT> tree_values, tree_add, tree_factor, tree_spent_add, tree_spent_values;
 
 void Init() {
     tree_values.fill(0);
@@ -117,10 +117,13 @@ void Push(size_t v, size_t l, size_t r) {
             tree_factor[w] *= tree_factor[v];
             (tree_add[w] *= tree_factor[v]) += tree_add[v];
             (tree_values[w] *= tree_factor[v]) += tree_add[v] * (r - l) / 2;
+            tree_spent_add[w] += tree_spent_add[v];
+            tree_spent_values[w] += tree_spent_add[v] * (r - l) / 2;
         }
     }
     tree_factor[v] = 1;
     tree_add[v] = 0;
+    tree_spent_add[v] = 0;
 }
 
 double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
@@ -129,7 +132,7 @@ double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
     }
     Push(v, l, r);
     if (ql <= l && r <= qr) {
-        return tree_values[v];
+        return tree_values[v] - tree_spent_values[v];
     }
     return ComputeSum(v * 2, l, (l + r) / 2, ql, qr)
            + ComputeSum(v * 2 + 1, (l + r) / 2, r, ql, qr);
@@ -152,19 +155,36 @@ void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
             + (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
 }
 
-void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
+void Spend(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
     if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
         return;
     }
     Push(v, l, r);
     if (ql <= l && r <= qr) {
-        tree_factor[v] *= 0.87;
-        tree_add[v] *= 0.87;
-        tree_values[v] *= 0.87;
+        tree_spent_add[v] += value;
+        tree_spent_values[v] += value * (r - l);
         return;
     }
-    Multiply(v * 2, l, (l + r) / 2, ql, qr);
-    Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr);
+    Spend(v * 2, l, (l + r) / 2, ql, qr, value);
+    Spend(v * 2 + 1, (l + r) / 2, r, ql, qr, value);
+    tree_spent_values[v] =
+            (v * 2 < VERTEX_COUNT ? tree_spent_values[v * 2] : 0)
+            + (v * 2 + 1 < VERTEX_COUNT ? tree_spent_values[v * 2 + 1] : 0);
+}
+
+void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr, double factor_value) {
+    if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
+        return;
+    }
+    Push(v, l, r);
+    if (ql <= l && r <= qr) {
+        tree_factor[v] *= factor_value;
+        tree_add[v] *= factor_value;
+        tree_values[v] *= factor_value;
+        return;
+    }
+    Multiply(v * 2, l, (l + r) / 2, ql, qr, factor_value);
+    Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr, factor_value);
     tree_values[v] =
             (v * 2 < VERTEX_COUNT ? tree_values[v * 2] : 0)
             + (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
@@ -193,11 +213,18 @@ int main() {
         if (query_type == "ComputeIncome") {
             cout << ComputeSum(1, 0, DAY_COUNT_P2, idx_from, idx_to) << endl;
         } else if (query_type == "PayTax") {
-            Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to);
+            double percents;
+            cin >> percents;
+            double factor_value = 1.0 - (percents / 100.0);
+            Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to, factor_value);
         } else if (query_type == "Earn") {
             double value;
             cin >> value;
             Add(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
+        } else if (query_type == "Spend") {
+            double value;
+            cin >> value;
+            Spend(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
         }
     }
 
